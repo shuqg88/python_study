@@ -1,0 +1,95 @@
+# coding:utf-8 
+import math
+import csv
+import os
+import re
+
+#将要计算的小区信息按照指定格式生成dict
+
+Scell_Path= 'c:\\CSV\\Scell.csv'#MRE结果文件所在的路径
+Ncell_Path= 'c:\\CSV\\Ncell.csv'#小区信息文件所在的路径
+Store_file= 'c:/CSV/store2.txt'#结果存在文件
+
+#将源文件征生成dict,定义csv转换成dict字典
+def build_list_dict(source_file, key, lst_inner_value):
+    new_dict = {}
+    with open(source_file, 'rb')as csv_file:       
+        data = csv.DictReader(csv_file, delimiter=",")
+        for row in data:
+            for element in lst_inner_value:
+                new_dict.setdefault(row[key], []).append(row[element])
+    return new_dict
+# sample:
+# test_club=build_list_dict('test_info.csv','season',['move from','move to'])
+# print test_club
+
+
+
+
+
+
+
+
+
+        
+        
+#定义距离计算函数
+
+def distance(scell,ncell,Store_file): 
+    f=open(Store_file, 'w')
+
+            
+    for Skey,Svalue in scell.items():
+        for Nkey,Nvalue in ncell.items():
+            if Svalue[-1]==str(Nvalue[-1]):
+                S_rad_lat = (math.pi/180.0)*float(Svalue[1])
+                S_rad_lon = (math.pi/180.0)*float(Svalue[2])
+                N_rad_lat = (math.pi/180.0)*float(Nvalue[1])
+                N_rad_lon= (math.pi/180.0)*float(Nvalue[2])                                
+                ra = 6378.140  # 赤道半径 (km)
+                rb = 6356.755  # 极半径 (km)
+                flatten = (ra-rb)/ra #地球扁率
+                pA=math.atan(rb/ra*math.tan(S_rad_lat))
+                pB=math.atan(rb/ra*math.tan(N_rad_lat))
+                try:
+                    xx = math.acos(math.sin(pA) * math.sin(pB) + math.cos(pA) * math.cos(pB) * math.cos(N_rad_lon - S_rad_lon))
+                    c1 = (math.sin(xx) - xx) * (math.sin(pA) + math.sin(pB)) ** 2 /math. cos(xx / 2) ** 2
+                    c2 = (math.sin(xx) + xx) * (math.sin(pA) - math.sin(pB)) ** 2 / math.sin(xx / 2) ** 2
+                    dr = flatten/8 * (c2-c1)
+                    distance = ra * (xx + dr)                            
+                    print(Svalue,Nvalue,distance)
+                    print >> f ,(Svalue,Nvalue,distance)
+                except:
+                    continue
+                            
+    f.close()
+
+Scell = build_list_dict(Scell_Path,'ID' ,['Eutracelltdd','latitude','longitude','EventType','AVG_MR_LTENCRSRP','MR_LTENCEARFCN','MR_LTENCPCI','avg_MR_LTENCRSRP','count_EventType','Nearfcn_pci'])
+Ncell = build_list_dict(Ncell_Path,'CGI', ['CGI','latitude','longitude','Nearfcn_pci'])
+
+
+
+distance(Scell, Ncell, Store_file) #scell与ncell的结果保存在文件，名Store_file
+
+"""
+def formatfile(file,newfile,symbols):
+    textfile = open(file,'rw')
+    newfile = open(newfile,'w')    
+    lines = textfile.readlines()
+    for line in lines:
+        for symbol in symbols:
+            if symbol in line:
+                newline = re.sub(symbol,'',line)
+                newfile.writelines(newline)
+    textfile.close()
+    newfile.close()
+"""               
+        
+
+print("执行完成")
+
+
+
+
+
+
